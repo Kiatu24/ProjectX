@@ -35,6 +35,7 @@ public class Util {
         GLCanvas canvas = new GLCanvas();
         canvas.addGLEventListener(game);
         canvas.addKeyListener(game);
+        canvas.addMouseListener(game);
         canvas.setFocusable(true);
         frame.add(canvas);
 		
@@ -90,16 +91,20 @@ public class Util {
      * @param y The y coordinate
      */
     public static void drawString(Game game, String text, int x, int y) {
+    	drawString(game, text, x, y, GLUT.BITMAP_TIMES_ROMAN_24);
+    }
+    
+    public static void drawString(Game game, String text, int x, int y, int font) {
     	game.gl.glColor3f(0.0f, 0.0f, 0.0f);
     	game.gl.glRasterPos2i(x, y);
-		game.glut.glutBitmapString(GLUT.BITMAP_TIMES_ROMAN_24, text);
+		game.glut.glutBitmapString(font, text);
     }
     
     /**
      * Splits a texture into individual frames
      * 
      * @param game The game
-     * @param texture The texture to be split
+     * @param textureDown The texture to be split
      * @param squareSize The size that the squares are
      * @return A Texture[] containing the frames
      */

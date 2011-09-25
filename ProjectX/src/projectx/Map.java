@@ -21,9 +21,12 @@ public class Map implements DrawableGameComponent{
 	public NPC[] npcs;
 	public Sprite[] allSprites;
 	public ItemContainer[] containers;
+	public Texture[] spawnPoints;
+	public Texture[] transitions;
 	public int width, height, tileWidth, tileHeight;
 	public Point cameraPos;
 	public Player player;
+	public boolean drawExtras = false;
 	
 	/**
 	 * Creates a new instance of a Map
@@ -36,6 +39,21 @@ public class Map implements DrawableGameComponent{
 		width = 10;
 		height = 10;
 		
+		bottomLayer = new int[width][height];
+		middleLayer = new int[width][height];
+		upperLayer = new int[width][height];
+		npcs = new NPC[0];
+		containers = new ItemContainer[0];
+		allSprites = new Sprite[0];
+		
+		for (int x = 0; x < width; x++) {
+			for (int y = 0; y < height; y++) {
+				bottomLayer[x][y] = -1;
+				middleLayer[x][y] = -1;
+				upperLayer[x][y] = -1;
+			}
+		}
+		
 		// loads the textures
 		images = Util.splitTexture(game, "MapTiles", 50);
 		tileWidth = 49;
@@ -43,6 +61,8 @@ public class Map implements DrawableGameComponent{
 		
 		// position of the camera
 		cameraPos = new Point(0, 0);
+		spawnPoints = new Texture[0];
+		transitions = new Texture[0];
 	}
 	
 	@Override
@@ -55,7 +75,17 @@ public class Map implements DrawableGameComponent{
 		for (int i = 0; i < npcs.length; i++) {
 			npcs[i].update();
 		}
-		player.update();
+		if (player != null) player.update();
+		
+		if (drawExtras) {
+			for (int i = 0; i < spawnPoints.length; i++) {
+				spawnPoints[i].update();
+			}
+			
+			for (int i = 0; i < transitions.length; i++) {
+				transitions[i].update();
+			}
+		}
 	}
 	
 	@Override
@@ -89,11 +119,58 @@ public class Map implements DrawableGameComponent{
 				DrawTile(upperLayer[x][y], x, y);
 			}
 		}
+		
+		// draw extras
+		if (drawExtras) {
+			for (int i = 0; i < spawnPoints.length; i++) {
+				spawnPoints[i].draw();
+			}
+			
+			for (int i = 0; i < transitions.length; i++) {
+				transitions[i].draw();
+			}
+		}
 	}
 	
 	@Override
 	public void destroy() {
 		
+	}
+	
+	/**
+	 * Sets the size of the map, retaining the old map
+	 * Essentially just increasing or decreasing size
+	 * 
+	 * @param newWidth The new width of the map
+	 * @param newHeight The new height of the map
+	 */
+	public void setSize(int newWidth, int newHeight) {
+		int oldWidth = width;
+		int oldHeight = height;
+		this.width = newWidth;
+		this.height = newHeight;
+		int[][] oldBottom = bottomLayer.clone();
+		int[][] oldMiddle = middleLayer.clone();
+		int[][] oldUpper = upperLayer.clone();
+		
+		bottomLayer = new int[newWidth][newHeight];
+		middleLayer = new int[newWidth][newHeight];
+		upperLayer = new int[newWidth][newHeight];
+		
+		for (int x = 0; x < newWidth; x++) {
+			for (int y = 0; y < newHeight; y++) {
+				if (x < oldWidth && y < oldHeight) {
+					bottomLayer[x][y] = oldBottom[x][y];
+					middleLayer[x][y] = oldMiddle[x][y];
+					upperLayer[x][y] = oldUpper[x][y];
+				}
+				else {
+					bottomLayer[x][y] = -1;
+					middleLayer[x][y] = -1;
+					upperLayer[x][y] = -1;
+				}
+			}
+		}
 	}
 
 	/**
@@ -146,8 +223,8 @@ public class Map implements DrawableGameComponent{
 			int y = 0;
 			
 			String[] dimensions = br.readLine().split(" ");
-			int width = Integer.parseInt(dimensions[0]);
-			int height = Integer.parseInt(dimensions[1]);
+			width = Integer.parseInt(dimensions[0]);
+			height = Integer.parseInt(dimensions[1]);
 			
 			layerArr = new int[width][height];
 			
@@ -169,9 +246,9 @@ public class Map implements DrawableGameComponent{
 			
 			return layerArr;
 		} catch (Exception e) {
-			e.printStackTrace();
+			System.out.println("Cannot find file: " + mapname + "_" + layer + "_" + version);
+			System.exit(0);
 		}
-		
 		return null;
 	}
 	
@@ -188,11 +265,20 @@ public class Map implements DrawableGameComponent{
 			BufferedReader br = new BufferedReader(new InputStreamReader(in));
 			String str;
 			
-			String[] counts = br.readLine().split("/");
-			npcs = new NPC[Integer.parseInt(counts[0])];
-			containers = new ItemContainer[Integer.parseInt(counts[1])];
 			int npcCount = 0;
 			int itemCount = 0;
+			
+			String firstLine = br.readLine();
+			if (firstLine != null) {
+				String[] counts = firstLine.split("/");
+				npcs = new NPC[Integer.parseInt(counts[0])];
+				containers = new ItemContainer[Integer.parseInt(counts[1])];
+			}
+			else {
+				npcs = new NPC[0];
+				containers = new ItemContainer[0];
+				return;
+			}
 			
 			while((str = br.readLine()) != null) {
 				if (!str.startsWith("#")) {
@@ -270,5 +356,18 @@ public class Map implements DrawableGameComponent{
 	public void setPlayer(Player player) {
 		this.player = player;
 		allSprites[npcs.length] = player;
+	}
+	
+	/**
+	 * Clears the map to empty spaces
+	 */
+	public void clear() {
+		for (int x = 0; x < width; x++) {
+			for (int y = 0; y < height; y++) {
+				bottomLayer[x][y] = -1;
+				middleLayer[x][y] = -1;
+				upperLayer[x][y] = -1;
+			}
+		}
 	}
 }

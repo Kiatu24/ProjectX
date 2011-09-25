@@ -19,7 +19,7 @@ public class OverworldGameState extends GameState {
 		
 		// loads a new map
 		map = new Map(game);
-		map.load("test-map", "1");
+		map.load("test-maze", "1");
 		
 		// loads a player
 		Player player = new Player(game, "Player1", "Male");
@@ -32,7 +32,7 @@ public class OverworldGameState extends GameState {
 		map.player.y = 50;
 		
 		messageBox = new Texture(game, "messageBox");
-		button = new XButton(game, "Woop", 500, 0);
+		button = new XButton(game, "   Woop", 500, 0);
 	}
 	
 	@Override
@@ -78,7 +78,7 @@ public class OverworldGameState extends GameState {
 		if (key.getKeyCode() == KeyEvent.VK_SPACE) {
 			NPC npc = map.player.checkNPC();
 			if (npc != null) {
-				messageText = npc.text;
+				messageText = npc.name + ": " + npc.text;
 				npc.isTalking = true;
 				npc.turnTo(map.player);
 				return;

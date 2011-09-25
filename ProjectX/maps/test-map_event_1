@@ -1,7 +1,7 @@
 2/2
 #/ Comment
 #/ 0=NPC / Name / x / y / Text
-#/ 1=Item / Name / quantity / x / y / effect
+#/ 1=Item / Name / quantity / effect / x / y
 0/ Steve / 100 / 100 / Hey! How's it going?
 0/ NPC / 300 / 300 / What do you want?
 1/ Potion / 2 / HP_PLUS_20 / 200 / 100

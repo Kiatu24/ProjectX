@@ -27,6 +27,12 @@ public class Texture {
 	protected WritableRaster raster;
 	public int width = 0, height = 0;
 	public BufferedImage image = null;
+	public boolean isBlinking = false;
+	private boolean blink = false;
+	public int blinkRate = 30;
+	private int blinkCount = 0;
+	public int x = 0;
+	public int y = 0;
 	
 	/**
 	 * Creates an instance of a Texture
@@ -57,13 +63,37 @@ public class Texture {
 	}
 	
 	/**
+	 * Updates the image, only necessary for blinking
+	 */
+	public void update() {
+		if (isBlinking) {
+			if (blinkCount > blinkRate) {
+				blink = !blink;
+				blinkCount = 0;
+			}
+			blinkCount++;
+		}
+	}
+	
+	/**
+	 * Draws the texture at the global x and y of this texture
+	 */
+	public void draw() {
+		if (!isBlinking || blink) {
+			draw(x, y);
+		}
+	}
+	
+	/**
 	 * Draws the image at the specified point
 	 * 
 	 * @param x The x coordinate
 	 * @param y The y coordinate
 	 */
 	public void draw(int x, int y) {
-		draw(x, y, width, height);
+		if (!isBlinking || blink) {
+			draw(x, y, width, height);
+		}
 	}
 	
 	/**

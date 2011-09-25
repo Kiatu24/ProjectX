@@ -26,12 +26,16 @@ public class Game implements GLEventListener, KeyListener, MouseListener {
 	public GLU glu = new GLU(); // used for drawing images
 	public GLUT glut = new GLUT();
 	public Point mousePos = new Point(0, 0);
+	public boolean mouseClicked = false;
+	
+	// TODO: Remove in final version
+	boolean editing = false;
 	
 	/**
 	 * Creates a Game with a JOGL Frame
 	 */
 	public Game() {
-		frame = Util.newJOGLFrame(this, "Project X", true);
+		frame = Util.newJOGLFrame(this, "Project X", !editing);
 	}
 
 	@Override
@@ -59,7 +63,12 @@ public class Game implements GLEventListener, KeyListener, MouseListener {
 		gl = drawable.getGL().getGL2();
 		gl.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);  
 		
-		gameState = new OverworldGameState(this);
+		if (!editing) {
+			gameState = new OverworldGameState(this);
+		}
+		else {
+			gameState = new MapEditorGameState(this);
+		}
 	}
 
 	@Override
@@ -75,7 +84,6 @@ public class Game implements GLEventListener, KeyListener, MouseListener {
 		if (key.getKeyCode() == KeyEvent.VK_ESCAPE) {
 			System.exit(0);
 		}
-		
 		gameState.handleKeyPressed(key);
 	}
 
@@ -106,11 +114,11 @@ public class Game implements GLEventListener, KeyListener, MouseListener {
 
 	@Override
 	public void mousePressed(MouseEvent arg0) {
-		
+		mouseClicked = true;
 	}
 
 	@Override
 	public void mouseReleased(MouseEvent arg0) {
-		
+		mouseClicked = false;
 	}
 }

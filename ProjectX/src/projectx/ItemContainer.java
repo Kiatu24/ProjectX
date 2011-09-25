@@ -68,4 +68,9 @@ public class ItemContainer implements DrawableGameComponent {
 		isActive = false;
 		return message;
 	}
+	
+	@Override
+	public String toString() {
+		return itemName + ": " + effect + " x" + quantity;
+	}
 }
