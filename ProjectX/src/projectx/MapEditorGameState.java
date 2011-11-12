@@ -466,7 +466,9 @@ public class MapEditorGameState extends GameState implements ActionListener {
 		npc.y = yTile * 49 - 16;
 		npc.text = text;
 		map.npcs[old.length] = npc;
-		map.allSprites = map.npcs;
+		for (int i = 0; i < map.npcs.length; i++) {
+			map.allSprites.add(map.npcs[i]);
+		}
 	}
 	
 	private void addItem(ItemContainer item) {

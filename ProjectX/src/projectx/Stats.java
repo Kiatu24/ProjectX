@@ -14,6 +14,7 @@ public class Stats {
 	public int magicDefense = 0;
 	public long exp = 0;
 	public int level = 0;
+	public boolean isDamagable = false;
 	
 	/**
 	 * Creates an instance of Stats
@@ -22,21 +23,42 @@ public class Stats {
 		
 	}
 	
+	/**
+	 * Adds experience
+	 * 
+	 * @param exp How much exp to add
+	 */
 	public void addEXP(long exp) {
 		this.exp += exp;
 		// check to see if the character has grown a level
 	}
 	
+	/**
+	 * Calculates damage if this stat is damagable
+	 * 
+	 * @param other The attacking stat
+	 */
 	public void calculateDamage(Stats other) {
-		// calculate damage here
+		if (isDamagable) {
+			// calculate damage here
+			System.out.println("ouch");
+		}
 	}
 	
+	/**
+	 * Grows a level
+	 */
 	public void growLevel() {
 		level++;
 		// add nodes for level grid
 		// do anything else necessary for leveling up
 	}
 	
+	/**
+	 * Calculates how much exp is needed to reach the next level
+	 * 
+	 * @return The amount to next level
+	 */
 	public long getToNextLevel() {
 		// calculate how much the character has to earn to get to the next level
 		return 0;

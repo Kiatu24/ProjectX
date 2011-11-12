@@ -42,6 +42,7 @@ public class Util {
 		frame.setVisible(true);
 		FPSAnimator animator = new FPSAnimator(canvas, 60, true);
 		animator.start();
+		game.animator = animator;
 		return frame;
 	}
 	

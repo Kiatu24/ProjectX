@@ -6,7 +6,9 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * A Map class that has holds map data, NPC data and player data
@@ -19,14 +21,19 @@ public class Map implements DrawableGameComponent{
 	public int[][] eventLayer;
 	public int[][] upperLayer;
 	public NPC[] npcs;
-	public Sprite[] allSprites;
+	public List<Sprite> allSprites;
 	public ItemContainer[] containers;
 	public Texture[] spawnPoints;
 	public Texture[] transitions;
+	public List<Enemy> enemies;
+
+	public MapTransition[] trans, spawn;
 	public int width, height, tileWidth, tileHeight;
 	public Point cameraPos;
 	public Player player;
 	public boolean drawExtras = false;
+	public String currentMap = "";
+	public String currentVersion = "";
 	
 	/**
 	 * Creates a new instance of a Map
@@ -44,7 +51,8 @@ public class Map implements DrawableGameComponent{
 		upperLayer = new int[width][height];
 		npcs = new NPC[0];
 		containers = new ItemContainer[0];
-		allSprites = new Sprite[0];
+		enemies = new ArrayList<Enemy>();
+		allSprites = new ArrayList<Sprite>();
 		
 		for (int x = 0; x < width; x++) {
 			for (int y = 0; y < height; y++) {
@@ -67,23 +75,28 @@ public class Map implements DrawableGameComponent{
 	
 	@Override
 	public void update() {
-		for (ItemContainer container : containers) {
-			if (container.isActive) {
-				container.update();
+		if(game.gameState.isPaused == false) {
+			for (ItemContainer container : containers) {
+				if (container.isActive) {
+					container.update();
+				}
 			}
-		}
-		for (int i = 0; i < npcs.length; i++) {
-			npcs[i].update();
-		}
-		if (player != null) player.update();
-		
-		if (drawExtras) {
-			for (int i = 0; i < spawnPoints.length; i++) {
-				spawnPoints[i].update();
+			for (int i = 0; i < npcs.length; i++) {
+				npcs[i].update();
 			}
+			for (Enemy enemy : enemies) {
+				enemy.update();
+			}
+			if (player != null) player.update();
 			
-			for (int i = 0; i < transitions.length; i++) {
-				transitions[i].update();
+			if (drawExtras) {
+				for (int i = 0; i < spawnPoints.length; i++) {
+					spawnPoints[i].update();
+				}
+
+				for (int i = 0; i < transitions.length; i++) {
+					transitions[i].update();
+				}
 			}
 		}
 	}
@@ -106,10 +119,12 @@ public class Map implements DrawableGameComponent{
 		}
 		
 		// sort and draw NPCs and player
-		Arrays.sort(allSprites);
-		for (Sprite sprite : allSprites) {
+		Object[] sprites = allSprites.toArray();
+		Arrays.sort(sprites);
+		for (Object sprite : sprites) {
 			if (sprite != null) {
-				sprite.draw();
+				Sprite s = (Sprite) sprite;
+				s.draw();
 			}
 		}
 		
@@ -130,11 +145,25 @@ public class Map implements DrawableGameComponent{
 				transitions[i].draw();
 			}
 		}
+		
+		if(game.gameState.isPaused == true)
+		{
+			Texture texture = new Texture(game, "Pause");
+			texture.draw(600, 600);
+		}
 	}
 	
 	@Override
-	public void destroy() {
+	public void destroy() 
+	{
+		bottomLayer = new int [0][0];
+		middleLayer = new int [0][0];
+		upperLayer = new int [0][0];
 		
+		npcs = new NPC[0];
+		allSprites = new ArrayList<Sprite>();
+		containers = new ItemContainer[0];
+		trans = new MapTransition[0];
 	}
 	
 	/**
@@ -193,15 +222,20 @@ public class Map implements DrawableGameComponent{
 	 * @param version Version of the map
 	 */
 	public void load(String mapname, String version) {
+		currentMap = mapname;
+		currentVersion = version;
 		bottomLayer = load(mapname, "bottom", version);
 		middleLayer = load(mapname, "middle", version);
 		upperLayer = load(mapname, "upper", version);
 		//npcs = loadNPC(mapname, version);
 		loadEventLayer(mapname, version);
-		allSprites = new Sprite[npcs.length + 1];
 		for (int i = 0; i < npcs.length; i++) {
-			allSprites[i] = npcs[i];
+			allSprites.add(npcs[i]);
 		}
+		enemies.add(new Enemy(game, "Butthole", "Male"));
+		enemies.get(0).x = 60;
+		enemies.get(0).y = 200;
+		allSprites.add(enemies.get(0));
 	}
 	
 	/**
@@ -267,12 +301,16 @@ public class Map implements DrawableGameComponent{
 			
 			int npcCount = 0;
 			int itemCount = 0;
+			int transCount = 0;
+			int spawnCount = 0;
 			
 			String firstLine = br.readLine();
 			if (firstLine != null) {
 				String[] counts = firstLine.split("/");
 				npcs = new NPC[Integer.parseInt(counts[0])];
 				containers = new ItemContainer[Integer.parseInt(counts[1])];
+				spawn = new MapTransition[Integer.parseInt(counts[2])];
+				trans = new MapTransition[Integer.parseInt(counts[3])];
 			}
 			else {
 				npcs = new NPC[0];
@@ -291,6 +329,17 @@ public class Map implements DrawableGameComponent{
 						containers[itemCount] = loadItem(tokens);
 						itemCount++;
 					}
+					else if (str.startsWith("2"))
+					{
+						spawn[spawnCount] = loadTransition(tokens);
+						spawnCount++;
+						System.out.println("set spawn: " + spawnCount);
+					}
+					else if (str.startsWith("3"))
+					{
+						trans[transCount] = loadTransition(tokens);
+						transCount++;
+					}
 				}
 			}
 		} catch (Exception e) {
@@ -306,7 +355,7 @@ public class Map implements DrawableGameComponent{
 	 */
 	private ItemContainer loadItem(String[] tokens) {
 		ItemContainer container = new ItemContainer(game, tokens[1].trim(), Integer.parseInt(tokens[2].trim()),
-				ItemEffect.valueOf(tokens[3].trim()));//ItemEffect.HP_PLUS_20);
+				ItemEffect.valueOf(tokens[3].trim()));
 		container.x = Integer.parseInt(tokens[4].trim());
 		container.y = Integer.parseInt(tokens[5].trim());
 		
@@ -326,6 +375,13 @@ public class Map implements DrawableGameComponent{
 		n.text = tokens[4];
 		
 		return n;
+	}
+	
+	private MapTransition loadTransition(String[] tokens)
+	{
+		MapTransition trans = new MapTransition(tokens[3].trim(), tokens[4].trim(), Integer.parseInt(tokens[1].trim()), Integer.parseInt(tokens[2].trim()));
+		
+		return trans;
 	}
 	
 	/**
@@ -355,7 +411,10 @@ public class Map implements DrawableGameComponent{
 	 */
 	public void setPlayer(Player player) {
 		this.player = player;
-		allSprites[npcs.length] = player;
+		player.x = spawn.length > 0 ? spawn[0].x : 10;
+		player.y = spawn.length > 0 ? spawn[0].y : 10;
+		System.out.println("set player: " + player.x + " " + player.y + "|" + spawn[0].x + " " + spawn[0].y);
+		allSprites.add(player);
 	}
 	
 	/**

@@ -14,6 +14,7 @@ import javax.media.opengl.GLEventListener;
 import javax.media.opengl.glu.GLU;
 import javax.swing.JFrame;
 
+import com.jogamp.opengl.util.FPSAnimator;
 import com.jogamp.opengl.util.gl2.GLUT;
 
 /**
@@ -27,9 +28,11 @@ public class Game implements GLEventListener, KeyListener, MouseListener {
 	public GLUT glut = new GLUT();
 	public Point mousePos = new Point(0, 0);
 	public boolean mouseClicked = false;
+	public FPSAnimator animator;
 	
 	// TODO: Remove in final version
 	boolean editing = false;
+	boolean showMainMenu = false;
 	
 	/**
 	 * Creates a Game with a JOGL Frame
@@ -63,11 +66,15 @@ public class Game implements GLEventListener, KeyListener, MouseListener {
 		gl = drawable.getGL().getGL2();
 		gl.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);  
 		
-		if (!editing) {
-			gameState = new OverworldGameState(this);
+		if (editing) {
+			gameState = new MapEditorGameState(this);
+		}
+		else if(showMainMenu)
+		{
+			gameState = new MainMenuGameState(this);
 		}
 		else {
-			gameState = new MapEditorGameState(this);
+			gameState = new OverworldGameState(this);
 		}
 	}
 

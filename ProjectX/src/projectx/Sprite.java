@@ -1,6 +1,7 @@
 package projectx;
 
 import java.awt.Rectangle;
+import java.util.List;
 
 /**
  * A basic Sprite class that handles movement and drawing
@@ -15,12 +16,20 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 	Texture[] frames;
 	boolean moving = false;
 	int animationAdd = 0;
-	int interval = 10;
+	int interval = 10, attackInterval = 4;
 	int animationCounter = 0;
 	public boolean isTalking = false;
 	
+	public Weapon weapon = null;
+	public Inventory inventory = null;
+	public Stats stats = null;
+	
 	final int DOWN = 0, UP = 3, RIGHT = 6, LEFT = 9;
 	int direction = DOWN;
+	
+	SpriteStatus status = SpriteStatus.NONE;
+	
+	private Map map;
 	
 	/**
 	 * Creates a new Sprite instance
@@ -30,20 +39,34 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 	 * @param filename The filename of the image
 	 */
 	public Sprite(Game game, String name, String filename) {
-		frames = Util.splitTexture(game, filename, 64);
+		frames = Util.splitTexture(game, filename, 100);
 
 		this.name = name;
 		this.game = game;
+		
+		inventory = new Inventory();
+		stats = new Stats();
 	}
 
 	@Override
 	public void update() {
-		currentFrame = direction + (moving ? (animationAdd == 3 ? 1 : animationAdd) : 1);
+		if (map == null) {
+			this.map = game.gameState.map;
+		}
 		
-		if (moving) {
-			if (animationCounter >= interval) {
-				if (animationAdd >= 3) {
+		if (status == SpriteStatus.ATTACKING) {
+			currentFrame = 12 + direction + animationAdd;
+			
+			if (animationCounter >= attackInterval) {
+				if (animationAdd >= 2) {
 					animationAdd = 0;
+					
+					Enemy enemy = checkEnemies();
+					if (enemy != null) {
+						attack(enemy);
+					}
+					
+					status = SpriteStatus.NONE;
 				}
 				else {
 					animationAdd++;
@@ -53,18 +76,43 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 			else {
 				animationCounter++;
 			}
-			
-			moving = false;
 		}
 		else {
-			animationAdd = 0;
-			animationCounter = 0;
+			currentFrame = direction + (moving ? (animationAdd == 3 ? 1 : animationAdd) : 1);
+			
+			if (moving) {
+				if (animationCounter >= interval) {
+					if (animationAdd >= 3) {
+						animationAdd = 0;
+					}
+					else {
+						animationAdd++;
+					}
+					animationCounter = 0;
+				}
+				else {
+					animationCounter++;
+				}
+				
+				moving = false;
+			}
+			else {
+				animationAdd = 0;
+				animationCounter = 0;
+			}
+			
+			if (weapon != null) {
+				weapon.update();
+			}
 		}
 	}
 
 	@Override
 	public void draw() {
 		frames[currentFrame].draw(x, y);
+		if (weapon != null) {
+			weapon.draw();
+		}
 	}
 
 	@Override
@@ -76,7 +124,7 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 	 * Moves the sprite right at the given speed
 	 */
 	public void moveRight() {
-		if (!isTalking) {
+		if (!isTalking && status != SpriteStatus.ATTACKING) {
 			moving = true;
 			direction = RIGHT;
 			Rectangle newR = getBounds();
@@ -91,7 +139,7 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 	 * Moves the sprite left at the given speed
 	 */
 	public void moveLeft() {
-		if (!isTalking) {
+		if (!isTalking && status != SpriteStatus.ATTACKING) {
 			moving = true;
 			direction = LEFT;
 			Rectangle newR = getBounds();
@@ -106,7 +154,7 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 	 * Moves the sprite up at the given speed
 	 */
 	public void moveUp() {
-		if (!isTalking) {
+		if (!isTalking && status != SpriteStatus.ATTACKING) {
 			moving = true;
 			direction = UP;
 			Rectangle newR = getBounds();
@@ -121,7 +169,7 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 	 * Moves the sprite down at the given speed
 	 */
 	public void moveDown() {
-		if (!isTalking) {
+		if (!isTalking && status != SpriteStatus.ATTACKING) {
 			moving = true;
 			direction = DOWN;
 			Rectangle newR = getBounds();
@@ -138,7 +186,7 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 	 * @return A rectangle containing the bounds
 	 */
 	public Rectangle getBounds() {
-		Rectangle r = new Rectangle(x + 16, y + 16, 30, 35);
+		Rectangle r = new Rectangle(x + 35, y + 35,30, 35);
 		return r;
 	}
 	
@@ -150,10 +198,12 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 	 */
 	public boolean checkCollision(Rectangle r) {
 		// checks the middle layer of the map
-		for (int x = 0; x < game.gameState.map.width; x++) {
-			for (int y = 0; y < game.gameState.map.height; y++) {
-				if (game.gameState.map.middleLayer[x][y] != -1) {
-					if (Util.isColliding(r, game.gameState.map.getTileBounds(x, y))) {
+		int[][] ml = map.middleLayer;
+		
+		for (int x = 0; x < map.width; x++) {
+			for (int y = 0; y < map.height; y++) {
+				if (ml[x][y] != -1) {
+					if (Util.isColliding(r, map.getTileBounds(x, y))) {
 						return true;
 					}
 				}
@@ -161,23 +211,44 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 		}
 		
 		// checks the NPCs
-		for (int i = 0; i < game.gameState.map.npcs.length; i++) {
-			NPC npc = game.gameState.map.npcs[i];
+		NPC[] npcs = map.npcs;
+		
+		for (int i = 0; i < npcs.length; i++) {
+			NPC npc = npcs[i];
 			if (npc != this && Util.isColliding(r, npc.getBounds())) {
 				return true;
 			}
 		}
 		
 		// check the player
-		Sprite player = game.gameState.map.player;
+		Sprite player = map.player;
 		if (player != this && Util.isColliding(r, player.getBounds())) {
 			return true;
 		}
 		
 		// check the items
-		for (int i = 0; i < game.gameState.map.containers.length; i++) {
-			ItemContainer container = game.gameState.map.containers[i];
+		ItemContainer[] containers = map.containers;
+		
+		for (int i = 0; i < containers.length; i++) {
+			ItemContainer container = containers[i];
 			if (container.isActive && Util.isColliding(r, container.getBounds())) {
+				return true;
+			}
+		}
+		
+		List<Enemy> enemies = map.enemies;
+		
+		for (Enemy enemy : enemies) {
+			if (enemy != this && Util.isColliding(r, enemy.getBounds())) {
+				return true;
+			}
+		}
+		
+		for (int i = 0; i < game.gameState.map.trans.length; i++) {
+			MapTransition trans = game.gameState.map.trans[i];
+			if (Util.isColliding(r, trans.getBounds())) 
+			{
+				game.gameState.switchMap(trans.map, trans.version, game.gameState.map.currentMap, game.gameState.map.currentVersion);
 				return true;
 			}
 		}
@@ -199,8 +270,10 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 		r.y += (direction == UP ? -10 : 0);
 		r.y += (direction == DOWN ? 10 : 0);
 		
-		for (int i = 0; i < game.gameState.map.npcs.length; i++) {
-			NPC npc = game.gameState.map.npcs[i];
+		NPC[] npcs = map.npcs;
+		
+		for (int i = 0; i < npcs.length; i++) {
+			NPC npc = npcs[i];
 			if (npc != this && Util.isColliding(r, npc.getBounds())) {
 				return npc;
 			}
@@ -221,10 +294,32 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 		r.y += (direction == UP ? -10 : 0);
 		r.y += (direction == DOWN ? 10 : 0);
 		
-		for (int i = 0; i < game.gameState.map.containers.length; i++) {
-			ItemContainer container = game.gameState.map.containers[i];
+		ItemContainer[] containers = map.containers;
+		
+		for (int i = 0; i < containers.length; i++) {
+			ItemContainer container = containers[i];
 			if (container.isActive && Util.isColliding(r, container.getBounds())) {
 				return container;
+			}
+		}
+		return null;
+	}
+	
+	public Enemy checkEnemies() {
+		Rectangle r = getBounds();
+		
+		int range = weapon.range;
+		r.x += (direction == RIGHT ? range : 0);
+		r.x += (direction == LEFT ? -range : 0);
+		r.y += (direction == UP ? -range : 0);
+		r.y += (direction == DOWN ? range : 0);
+		
+		List<Enemy> enemies = map.enemies;
+		
+		for (int i = 0; i < enemies.size(); i++) {
+			Enemy enemy = enemies.get(i);
+			if (enemy != this && Util.isColliding(r, enemy.getBounds())) {
+				return enemy;
 			}
 		}
 		return null;
@@ -261,6 +356,28 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 		else if (sprite.direction == LEFT) {
 			direction = RIGHT;
 		}
+	}
+	
+	/**
+	 * Sets the current weapon
+	 * 
+	 * @param weaponName The name of the new weapon
+	 */
+	public void setWeapon(String weaponName) {
+		weapon = new Weapon(game, weaponName, weaponName, this);
+	}
+	
+	/**
+	 * Attacks an enemy
+	 * 
+	 * @param enemy The enemy to attack
+	 */
+	private void attack(Enemy enemy) {
+		enemy.stats.calculateDamage(stats);
+	}
+	
+	public void attack() {
+		status = SpriteStatus.ATTACKING;
 	}
 
 	@Override

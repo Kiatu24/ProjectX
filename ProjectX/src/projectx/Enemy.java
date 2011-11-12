@@ -1,17 +1,14 @@
 package projectx;
 
-/**
- * Defines a Player class that builds on a Sprite
- */
-public class Player extends Sprite {
+public class Enemy extends Sprite {
 	/**
-	 * Creates a new instance of a Player
+	 * Creates a new instance of an enemy
 	 * 
 	 * @param game The game
-	 * @param name The name of the player
+	 * @param name The name of the enemy
 	 * @param filename The name of the file for the image
 	 */
-	public Player(Game game, String name, String filename) {
+	public Enemy(Game game, String name, String filename) {
 		super(game, name, filename);
 		
 		stats.isDamagable = true;

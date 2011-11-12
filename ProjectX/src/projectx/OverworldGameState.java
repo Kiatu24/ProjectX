@@ -8,7 +8,6 @@ import java.awt.event.KeyEvent;
 public class OverworldGameState extends GameState {
 	Texture messageBox;
 	String messageText = "";
-	XButton button;
 	
 	/**
 	 * Creates an instance of the OverworldGameState
@@ -19,46 +18,48 @@ public class OverworldGameState extends GameState {
 		
 		// loads a new map
 		map = new Map(game);
-		map.load("test-maze", "1");
+		map.load("test-forest", "1");
 		
 		// loads a player
 		Player player = new Player(game, "Player1", "Male");
+		player.setWeapon("BasicSword");
 		map.setPlayer(player);
 		
 		Util.splitTexture(game, "Male", 64);
 		
 		// TODO: make spawn points a part of the map
-		map.player.x = 50;
-		map.player.y = 50;
+		//map.player.x = 200;
+		//map.player.y = 75;
 		
 		messageBox = new Texture(game, "messageBox");
-		button = new XButton(game, "   Woop", 500, 0);
 	}
 	
+	
 	@Override
-	public void update() {
-		button.update();
-		
-		// player movement
-		if (upPressed) {
-			map.player.moveUp();
-		}
-		if (downPressed) {
-			map.player.moveDown();
-		}
-		if (leftPressed) {
-			map.player.moveLeft();
-		}
-		if (rightPressed) {
-			map.player.moveRight();
-		}
-		if (map.player.moving) {
-			if (messageText != "") {
-				map.stopTalkingNPCs();
+	public void update()
+	{		
+		if(game.gameState.isPaused == false)
+		{
+			// player movement
+			if (upPressed) {
+				map.player.moveUp();
 			}
-			messageText = "";
+			if (downPressed) {
+				map.player.moveDown();
+			}
+			if (leftPressed) {
+				map.player.moveLeft();
+			}
+			if (rightPressed) {
+				map.player.moveRight();
+			}
+			if (map.player.moving) {
+				if (messageText != "") {
+					map.stopTalkingNPCs();
+				}
+				messageText = "";
+			}
 		}
-		
 		map.update();
 	}
 	
@@ -68,8 +69,6 @@ public class OverworldGameState extends GameState {
 		
 		messageBox.draw(0, game.frame.getHeight() - messageBox.height, game.frame.getWidth(), messageBox.height);
 		Util.drawString(game, messageText, 10, game.frame.getHeight() - messageBox.height / 2 + 5);
-		
-		button.draw();
 	}
 	
 	@Override
@@ -89,6 +88,9 @@ public class OverworldGameState extends GameState {
 				messageText = container.obtain(map.player);
 				return;
 			}
+		}
+		if (key.getKeyCode() == KeyEvent.VK_A) {
+			map.player.attack();
 		}
 	}
 	
