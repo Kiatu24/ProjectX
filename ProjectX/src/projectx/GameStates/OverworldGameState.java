@@ -25,27 +25,24 @@ public class OverworldGameState extends GameState {
 		
 		// loads a new map
 		map = new Map(game);
-		map.load("test-forest", "1");
+		map.load("homevillage", "1");
 		
 		// loads a player
-		Player player = new Player(game, "Player1", "Male");
+		Player player = new Player(game, "Player", "Male");
 		player.setWeapon("BasicSword");
 		map.setPlayer(player);
 		
 		Util.splitTexture(game, "Male", 64);
 		
-		// TODO: make spawn points a part of the map
-		//map.player.x = 200;
-		//map.player.y = 75;
-		
 		messageBox = new Texture(game, "messageBox");
+		playMusic();
 	}
 	
 	
 	@Override
 	public void update()
 	{		
-		if(game.gameState.isPaused == false)
+		if(game.gameState.isPaused == false && !game.gameState.map.isCutscene)
 		{
 			// player movement
 			if (upPressed) {
@@ -105,7 +102,6 @@ public class OverworldGameState extends GameState {
 		}
 		if (key.getKeyCode() == KeyEvent.VK_A) {
 			map.player.attack();
-			map.cutscene.play("test-scene");
 		}
 	}
 	

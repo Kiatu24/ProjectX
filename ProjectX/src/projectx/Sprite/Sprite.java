@@ -45,6 +45,9 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 	public int deathTimer = 25;
 	private int deathCounter = 0;
 	
+	public boolean dontUpdate = false;
+	public boolean hidden = false;
+	
 	/**
 	 * Creates a new Sprite instance
 	 * 
@@ -53,6 +56,19 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 	 * @param filename The filename of the image
 	 */
 	public Sprite(Game game, String name, String filename) {
+		// TODO: Temporary
+		if (name.equals("Enemy")) {
+			filename = "Enemy-Male";
+		}
+		else if (name.equals("???")) {
+			filename = "Orc-Male";
+		}
+		else if (name.equals("Player")) {
+			filename = "Player-Male";
+		}
+		else {
+			filename = "Old-Male";
+		}
 		frames = Util.splitTexture(game, filename, 100);
 
 		this.name = name;
@@ -64,6 +80,14 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 
 	@Override
 	public void update() {
+		if (map == null) {
+			this.map = game.gameState.map;
+		}
+		
+		if (dontUpdate || hidden) {
+			return;
+		}
+		
 		if (!stats.isAlive) {
 			currentFrame = 24;
 			
@@ -75,10 +99,6 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 			}
 			
 			return;
-		}
-		
-		if (map == null) {
-			this.map = game.gameState.map;
 		}
 		
 		if (status == SpriteStatus.ATTACKING) {
@@ -136,6 +156,10 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 
 	@Override
 	public void draw() {
+		if (hidden) {
+			return;
+		}
+		
 		frames[currentFrame].draw(x, y);
 		if (weapon != null) {
 			weapon.draw();
@@ -145,6 +169,10 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 	@Override
 	public void destroy() {
 		
+	}
+	
+	public void hide() {
+		this.hidden = true;
 	}
 	
 	/**
@@ -214,12 +242,12 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 	 */
 	public Rectangle getBounds() {
 		Rectangle r = new Rectangle(x + 35, y + 35,30, 35);
-		return r;
+		return hidden ? new Rectangle(-1, -1, -1, -1) : r;
 	}
 	
 	public void placeAtTile(int x, int y) {
 		this.x = x * map.tileWidth - 35;
-		this.y = y * map.tileHeight - 35;
+		this.y = y * map.tileHeight - 25;
 	}
 	
 	public Point getClosestTile() {
@@ -300,12 +328,14 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 			}
 		}
 		
-		for (int i = 0; i < game.gameState.map.trans.length; i++) {
-			MapTransition trans = game.gameState.map.trans[i];
-			if (Util.isColliding(r, trans.getBounds())) 
-			{
-				game.gameState.switchMap(trans.map, trans.version, game.gameState.map.currentMap, game.gameState.map.currentVersion);
-				return true;
+		if (player == this) {
+			for (int i = 0; i < game.gameState.map.trans.length; i++) {
+				MapTransition trans = game.gameState.map.trans[i];
+				if (Util.isColliding(r, trans.getBounds())) 
+				{
+					game.gameState.switchMap(trans.map, trans.version, game.gameState.map.currentMap, game.gameState.map.currentVersion);
+					return true;
+				}
 			}
 		}
 		
@@ -446,7 +476,12 @@ public class Sprite implements DrawableGameComponent, Comparable<Sprite> {
 	 * @param enemy The enemy to attack
 	 */
 	private void attack(Enemy enemy) {
-		enemy.stats.calculateDamage(stats);
+		if ((name.equals("Enemy") && enemy.name.equals("Enemy")) || enemy.name.equals("???")) {
+			// do nothing
+		}
+		else {
+			enemy.stats.calculateDamage(stats);
+		}
 	}
 	
 	public void attack() {

@@ -34,6 +34,8 @@ public class MainMenuGameState extends GameState implements ActionListener
 		arrowL = new Texture(game, "arrowleft");
 		arrowRbright = new Texture(game, "arrowright1");
 		arrowLbright = new Texture(game, "arrowleft1");
+		
+		game.music.play(game.music.THEME);
 	}
 
 	@Override
@@ -100,9 +102,9 @@ public class MainMenuGameState extends GameState implements ActionListener
 	//TODO: need to finish this method 
 	private void goTo(int sel)
 	{
-		if(sel == 1)
-		{
-			System.out.println("New game should start");
+		if(sel == 1) {
+			game.music.stop();
+			game.gameState = new OverworldGameState(game);
 		}
 		else if(sel == 2)
 			System.out.println("Game should be loaded");

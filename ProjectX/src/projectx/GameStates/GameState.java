@@ -5,6 +5,7 @@ import java.awt.event.KeyEvent;
 import projectx.Components.Game;
 import projectx.Maps.Map;
 import projectx.Maps.MapTransition;
+import projectx.Sprite.Player;
 
 /**
  * A class defining a Game State
@@ -36,15 +37,19 @@ public class GameState {
 	 */
 	public void switchMap(String mapName, String version, String oldMap, String oldVersion)
 	{
+		game.music.stop();
+		Player p = map.player;
 		map.destroy();
-		map.load(mapName, version);	
+		map.load(mapName, version);
+		map.setPlayer(p);
+		playMusic();
 		
 		for(MapTransition spawn : game.gameState.map.spawn)
 		{
 			if(spawn.map.equals(oldMap) && spawn.version.equals(oldVersion))
 			{
-				map.player.x = spawn.x;
-				map.player.y = spawn.y - 16;
+				map.player.x = spawn.x - 35;
+				map.player.y = spawn.y - 30;
 			}
 		}
 	}
@@ -125,6 +130,33 @@ public class GameState {
 		}
 		if (key.getKeyCode() == KeyEvent.VK_LEFT) {
 			leftPressed = false;
+		}
+	}
+	
+	public void playMusic() {
+		if (map.name.equals("homevillage") && map.version == 1) {
+			game.music.play(game.music.VILLAGE);
+		}
+		else if (map.name.equals("homevillage") && map.version == 2) {
+			game.music.play(game.music.BURNT_VILLAGE);
+		}
+		else if (map.name.equals("plains")) {
+			game.music.play(game.music.FIELD);
+		}
+		else if (map.name.equals("forest")) {
+			game.music.play(game.music.FOREST);
+		}
+		else if (map.name.equals("forest2")) {
+			game.music.play(game.music.FOREST);
+		}
+		else if (map.name.equals("village2")) {
+			game.music.play(game.music.ELF_VILLAGE);
+		}
+		else if (map.name.equals("dungeon")) {
+			game.music.play(game.music.DUNGEON);
+		}
+		else if (map.name.equals("dungeon2")) {
+			game.music.play(game.music.BATTLE);
 		}
 	}
 }

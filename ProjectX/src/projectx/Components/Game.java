@@ -34,16 +34,18 @@ public class Game implements GLEventListener, KeyListener, MouseListener {
 	public Point mousePos = new Point(0, 0);
 	public boolean mouseClicked = false;
 	public FPSAnimator animator;
+	public MusicManager music;
 	
 	// TODO: Remove in final version
 	boolean editing = false;
-	boolean showMainMenu = false;
+	boolean showMainMenu = true;
 	
 	/**
 	 * Creates a Game with a JOGL Frame
 	 */
 	public Game() {
 		frame = Util.newJOGLFrame(this, "Project X", !editing);
+		music = new MusicManager();
 	}
 
 	@Override

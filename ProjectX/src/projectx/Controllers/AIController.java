@@ -12,6 +12,7 @@ public class AIController implements GameComponent {
 	public Sprite sprite;
 	public int changeInterval = 50;
 	private int changeCounter = 0;
+	public boolean dead = false;
 	
 	/**
 	 * Creates an instance of an AIController
@@ -27,6 +28,16 @@ public class AIController implements GameComponent {
 	
 	@Override
 	public void update() {
+		if (dead) {
+			sprite.currentFrame = 24;
+			//sprite.dontUpdate = true;
+			return;
+		}
+		
+		if (sprite.name.equals("???")) {
+			return;
+		}
+		
 		if (!sprite.isTalking) {
 			if (changeCounter <= changeInterval) {
 				if (sprite.direction == sprite.UP) {

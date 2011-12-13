@@ -42,7 +42,6 @@ public class Stats {
 	public void calculateDamage(Stats other) {
 		if (isDamagable) {
 			// calculate damage here
-			System.out.println("ouch");
 			isAlive = false;
 		}
 	}

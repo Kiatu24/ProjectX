@@ -36,6 +36,7 @@ public class Map implements DrawableGameComponent{
 	public ItemContainer[] containers;
 	public Texture[] spawnPoints;
 	public Texture[] transitions;
+	public List<SceneTile> scenes;
 	public List<Enemy> enemies;
 
 	public MapTransition[] trans, spawn;
@@ -50,6 +51,8 @@ public class Map implements DrawableGameComponent{
 	public boolean isCutscene = false;
 	public CutsceneController cutscene;
 	public int enemyNumber = 0;
+	public String name;
+	public int version = 0;
 	
 	/**
 	 * Creates a new instance of a Map
@@ -69,6 +72,7 @@ public class Map implements DrawableGameComponent{
 		containers = new ItemContainer[0];
 		enemies = new ArrayList<Enemy>();
 		allSprites = new ArrayList<Sprite>();
+		scenes = new ArrayList<SceneTile>();
 		
 		for (int x = 0; x < width; x++) {
 			for (int y = 0; y < height; y++) {
@@ -114,6 +118,15 @@ public class Map implements DrawableGameComponent{
 				enemy.update();
 			}
 			if (player != null) player.update();
+			
+			for (SceneTile s : scenes) {
+				if (Util.isColliding(player.getBounds(), s.getBounds())){
+					if (!s.hasPlayed) {
+						cutscene.play(s.name);
+						s.hasPlayed = true;
+					}
+				}
+			}
 			
 			if (drawExtras) {
 				for (int i = 0; i < spawnPoints.length; i++) {
@@ -190,6 +203,11 @@ public class Map implements DrawableGameComponent{
 		allSprites = new ArrayList<Sprite>();
 		containers = new ItemContainer[0];
 		trans = new MapTransition[0];
+		for (SceneTile s : scenes) {
+			s.hasPlayed = false;
+		}
+		scenes = new ArrayList<SceneTile>();
+		cutscene.destroy();
 	}
 	
 	/**
@@ -248,6 +266,8 @@ public class Map implements DrawableGameComponent{
 	 * @param version Version of the map
 	 */
 	public void load(String mapname, String version) {
+		this.name = mapname;
+		this.version = Integer.parseInt(version);
 		currentMap = mapname;
 		currentVersion = version;
 		bottomLayer = load(mapname, "bottom", version);
@@ -312,7 +332,7 @@ public class Map implements DrawableGameComponent{
 	private List<Enemy> loadEnemies(int number) {
 		List<Enemy> e = new ArrayList<Enemy>();
 		for (int i = 0; i < number; i++) {
-			Enemy enemy = new Enemy(game, "Butthole", "Male");
+			Enemy enemy = new Enemy(game, "Enemy", "Male");
 			
 			Random r = new Random();
 			int rw = 0;
@@ -333,6 +353,9 @@ public class Map implements DrawableGameComponent{
 							isValid = false;
 						}
 					}
+					
+					isValid = !enemy.checkCollision(enemy.getBounds());
+					
 					isInPlace = isValid;
 				}
 			}
@@ -392,18 +415,25 @@ public class Map implements DrawableGameComponent{
 					{
 						spawn[spawnCount] = loadTransition(tokens);
 						spawnCount++;
-						System.out.println("set spawn: " + spawnCount);
 					}
 					else if (str.startsWith("3"))
 					{
 						trans[transCount] = loadTransition(tokens);
 						transCount++;
 					}
+					else if (str.startsWith("4")) {
+						loadScenes(tokens);
+					}
 				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private void loadScenes(String[] tokens) {
+		scenes.add(new SceneTile(Integer.parseInt(tokens[1]), Integer.parseInt(tokens[2]), tokens[3],
+				(tokens[4] == "true" ? true : false)));
 	}
 	
 	/**
@@ -432,6 +462,12 @@ public class Map implements DrawableGameComponent{
 		n.x = Integer.parseInt(tokens[2].trim());
 		n.y = Integer.parseInt(tokens[3].trim());
 		n.text = tokens[4];
+		
+		if (n.text.equals("{dead}")) {
+			n.text = "...";
+			n.dontUpdate = true;
+			n.controller.dead = true;
+		}
 		
 		return n;
 	}
@@ -470,9 +506,8 @@ public class Map implements DrawableGameComponent{
 	 */
 	public void setPlayer(Player player) {
 		this.player = player;
-		player.x = spawn.length > 0 ? spawn[0].x : 10;
-		player.y = spawn.length > 0 ? spawn[0].y : 10;
-		System.out.println("set player: " + player.x + " " + player.y + "|" + spawn[0].x + " " + spawn[0].y);
+		player.x = spawn.length > 0 ? spawn[0].x - 35 : 10;
+		player.y = spawn.length > 0 ? spawn[0].y - 30 : 10;
 		allSprites.add(player);
 	}
 	

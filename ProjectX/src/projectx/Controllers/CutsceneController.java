@@ -11,6 +11,8 @@ import projectx.Components.Game;
 import projectx.Components.GameComponent;
 import projectx.Components.Util;
 import projectx.Maps.CutsceneAction;
+import projectx.Maps.Map;
+import projectx.Sprite.Enemy;
 import projectx.Sprite.Sprite;
 
 public class CutsceneController implements GameComponent{
@@ -30,18 +32,44 @@ public class CutsceneController implements GameComponent{
 	@Override
 	public void update() {
 		if ((currentSprite == null || !action.name.equals(currentSprite.name)) && action != null) {
-			currentSprite = game.gameState.map.getSprite(action.name);
+			currentSprite = action.name.equals("Player") ? game.gameState.map.player : game.gameState.map.getSprite(action.name);
+			
+			if (currentSprite == null) {
+				return;
+			}
+			if (action.x == -1) {
+				action.x = currentSprite.x;
+			}
+			if (action.y == -1) {
+				action.y = currentSprite.y;
+			}
 		}
 		
 		if (currentSprite != null && currentAction < actions.size()) {
 			if (Util.isCloseTo(currentSprite.x, currentSprite.y, action.x, action.y, leeway)) {
 				if (action.text.equals("")) {
+					currentSprite.direction = action.direction;
 					ready();
 				}
 				else {
 					currentSprite.direction = action.direction;
-					game.gameState.messageText = action.text;
-					pauseForText = true;
+					if (action.text.equals("{Enemy}")) {
+						Map m = currentSprite.map;
+						Enemy e = new Enemy(game, "???", "Male");
+						e.map = m;
+						e.x = currentSprite.x;
+						e.y = currentSprite.y;
+						m.allSprites.add(e);
+						m.enemies.add(e);
+						currentSprite.hide();
+						currentSprite = e;
+						game.gameState.messageText = "...";
+						pauseForText = true;
+					}
+					else {
+						game.gameState.messageText = action.text;
+						pauseForText = true;
+					}
 				}
 			}
 			else {
@@ -72,6 +100,7 @@ public class CutsceneController implements GameComponent{
 		currentSprite = null;
 		action = null;
 		actions = new ArrayList<CutsceneAction>();
+		currentAction = 0;
 	}
 	
 	public void play(String name) {
@@ -89,6 +118,11 @@ public class CutsceneController implements GameComponent{
 			if (currentAction < actions.size()) {
 				action = actions.get(currentAction);
 			}
+//			else {
+//				game.gameState.map.isCutscene = false;
+//				game.gameState.messageText = "";
+//				destroy();
+//			}
 		}
 	}
 	
@@ -107,7 +141,7 @@ public class CutsceneController implements GameComponent{
 				action.x = Integer.parseInt(parts[1]);
 				action.y = Integer.parseInt(parts[2]);
 				action.direction = Integer.parseInt(parts[3]);
-				action.text = parts[4];
+				action.text = parts.length > 4 ? parts[4] : "";
 				
 				actions.add(action);
 			}
